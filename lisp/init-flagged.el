@@ -58,9 +58,7 @@
     :after vertico
     :init (vertico-buffer-mode)))
 
-(setq use-posframe nil)
-
-(when (and display-graphic-p use-posframe)
+(when (display-graphic-p)
   (use-package vertico-posframe
   :config
   (setq vertico-posframe-parameters

@@ -1,3 +1,9 @@
+(defun night-day-theme ()
+    (if (> (nth 2 (decode-time (current-time))) 16)
+        (setq catppuccin-flavor 'macchiato)
+      (setq catppuccin-flavor 'mocha))
+  (catpuccin-reload))
+
 (defun is-big-file ()
   (if (> (count-lines (point-min) (point-max)) 500)
       (minimap-mode 1)
@@ -67,7 +73,7 @@
 ;      (set (make-local-variable 'compile-command)
 ;           "go build -v && go test -v && go vet"))
   ; Godef jump key binding
-  (local-set-key (kbd "M-.") 'xref-find-definitions)
+  (local-set-key (kbd "M-.") 'godef-jump)
   (local-set-key (kbd "M-*") 'pop-tag-mark))
 
 (defun go-run-this-file ()
