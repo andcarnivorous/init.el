@@ -764,12 +764,12 @@
 (require 'embark)
 (require 'python-isort)
 (require 'init-flagged)
-(load-file "~/.emacs.d/eshell-p10k.el")
 (require 'catppuccin-theme)
 (night-day-theme)
 (setq sml/no-confirm-load-theme t)
 (setq sml/theme 'atom-one-dark)
 (sml/setup)
+(load-file "~/.emacs.d/eshell-p10k.el")
 (setq eshell-prompt-function #'eshell-p10k-prompt-function
         eshell-prompt-regexp eshell-p10k-prompt-string)
 

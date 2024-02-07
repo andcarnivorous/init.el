@@ -2,7 +2,7 @@
     (if (> (nth 2 (decode-time (current-time))) 16)
         (setq catppuccin-flavor 'macchiato)
       (setq catppuccin-flavor 'mocha))
-  (catpuccin-reload))
+  (catppuccin-reload))
 
 (defun is-big-file ()
   (if (> (count-lines (point-min) (point-max)) 500)
