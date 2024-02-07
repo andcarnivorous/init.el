@@ -1,6 +1,6 @@
-(scroll-bar-mode 1)
-(recentf-mode 1)
 (set-scroll-bar-mode 'right)
+(scroll-bar-mode 0)
+(recentf-mode 1)
 (setq ring-bell-function 'ignore)
 (tool-bar-mode -1)
 (menu-bar-mode -1)
@@ -16,8 +16,42 @@
 (setq pixel-scroll-mode t)
 (setq pixel-scroll-precision-large-scroll-height 40.0)
 (setq warning-minimum-level :error)
-
+(setq display-line-numbers-type 'relative)
+(setq truncate-partial-width-windows nil)
+(setq-default truncate-lines t)
 (require 'package)
+
+(defun my-select-line ()
+  (set-mark (line-beginning-position))
+  (goto-char (line-end-position)))
+
+(defun select-line ()
+  (interactive)
+  (my-select-line)
+  (activate-mark))
+
+(defun kill-line-from-any-col ()
+  (interactive)
+  (if (not (region-active-p))
+      (my-select-line)
+    (kill-region (line-beginning-position) (line-end-position))
+    (delete-char 1)
+    (activate-mark)))
+
+(defun copy-line ()
+  (interactive)
+    (if (not (region-active-p))
+      (my-select-line))
+  (kill-ring-save (region-beginning) (region-end)))
+
+(defun copy-paste-line ()
+  (interactive)
+  (copy-line)
+  (goto-char (line-end-position))
+  (newline)
+  (goto-char (line-beginning-position))
+  (yank))
+
 
 (add-to-list 'package-archives
              '("melpa" . "https://melpa.org/packages/") t)
@@ -27,12 +61,13 @@
   (package-refresh-contents))
 (package-refresh-contents)
 
-
 (when (memq window-system '(mac ns))
   (exec-path-from-shell-initialize)
   (setq mac-command-modifier 'control)
-  (add-to-list 'default-frame-alist '(font . "Menlo 15")))
+  (add-to-list 'default-frame-alist '(font . "Menlo 13")))
 
+(when (memq window-system '(x))
+  (exec-path-from-shell-initialize))
 
 (add-to-list 'load-path "~/.emacs.d/functions/")
 (add-to-list 'load-path "~/.emacs.d/lisp/")
@@ -40,19 +75,24 @@
 ;; left, top, right, bottom
 (setq window-sides-slots '(1 0 1 0))
 
+(defun set-window-width-percentage (percentage)
+  "Set the Emacs window width to a given PERCENTAGE of the screen width."
+  (let* ((s-w (display-pixel-width))
+         (c-w (frame-char-width)))
+    (round (* s-w percentage 0.01) c-w)))
+(setq fixed-w-width (set-window-width-percentage 25))
 (add-to-list 'display-buffer-alist
           `(,(rx (| "*compilation*" "*grep*" "*Embark Export" "*Occur"))
             display-buffer-in-side-window
             (side . right)
             (slot . 0)
             (window-parameters . ((no-delete-other-windows . t)))
-            (window-width . 80)))
+            (window-width . fixed-w-width)))
 
 ;(pdf-tools-install)
 
 ;(when (equal system-type 'gnu/linux) (set-exec-path-from-shell-PATH))
-(set-default 'truncate-lines nil)
-;(set-default 'truncate-partial-width-windows nil)
+
 (electric-pair-mode 1)
 
 (setq show-paren-delay 0
@@ -67,6 +107,8 @@
                             (?\{ . ?\})
                            ))
 (electric-pair-mode t)
+
+
 
 (custom-set-variables
  ;; custom-set-variables was added by Custom.
@@ -137,7 +179,7 @@
                (derived-mode-p 'emacs-lisp-mode)
              (emacs-lisp-mode))
            (package-build-minor-mode)
-;           (setq-local flycheck-checkers nil)
+           (setq-local flycheck-checkers nil)
            (set
             (make-local-variable 'package-build-working-dir)
             (expand-file-name "../working/"))
@@ -219,9 +261,9 @@
 (use-package ace-window
   :ensure t)
 (use-package blamer
-  :ensure t)
-;  :hook
-;  (prog-mode . blamer-mode))
+  :ensure t
+  :hook
+  (prog-mode . blamer-mode))
 (use-package org-ac
   :ensure t)
 (use-package org-bullets
@@ -262,6 +304,9 @@
   :config
   (nyan-mode t))
 
+(setq camcorder-output-directory "~/camcorder/")
+(setq camcorder-gif-output-directory "~/camcorder/")
+
 (add-hook 'prog-mode-hook 'git-gutter-mode)
 (add-hook 'web-mode-hook 'skewer-html-mode)
 (add-hook 'web-mode-hook 'flycheck-mode)
@@ -287,13 +332,30 @@
 (global-set-key (kbd "C-ù") 'mark-next-like-this)
 (global-set-key (kbd "C-<next>") 'tab-next)
 (global-set-key (kbd "C-<prior>") 'tab-previous)
-(global-set-key (kbd "M-n") 'embark-next-symbol)
-(global-set-key (kbd "M-p") 'embark-previous-symbol)
+;; (global-set-key (kbd "M-n") 'embark-next-symbol)
+;; (global-set-key (kbd "M-p") 'embark-previous-symbol)
+(global-set-key (kbd "M-n") 'forward-paragraph)
+(global-set-key (kbd "M-p") 'backward-paragraph)
+(global-set-key (kbd "C-x C-m") 'consult-mark)
+(global-set-key (kbd "C-x C-S-m") 'consult-global-mark)
+(global-set-key (kbd "C-x C-r") 'consult-register)
+(defvar my-C-l-map (make-sparse-keymap)
+  "Keymap for my M-l prefix.")
+(global-set-key (kbd "M-l") my-C-l-map)
+(global-set-key (kbd "M-l l") 'downcase-word)
+(global-set-key (kbd "M-l k") 'kill-whole-line)
+(global-set-key (kbd "M-l M-k") 'kill-whole-line)
+(global-set-key (kbd "M-l y") 'copy-paste-line)
+(global-set-key (kbd "M-l M-y") 'copy-paste-line)
+(global-set-key (kbd "M-l w") 'copy-line)
+(global-set-key (kbd "M-l M-w") 'copy-line)
+(global-set-key (kbd "M-l C-SPC") 'select-line)
+(global-set-key (kbd "M-l M-SPC") 'select-line)
 (add-hook 'prog-mode-hook #'rainbow-delimiters-mode)
 (add-hook 'org-mode-hook #'org-bullets-mode)
 (add-hook 'org-mode-hook #'display-line-numbers-mode)
 (add-hook 'org-mode-hook #'auto-fill-mode)
-;(add-hook 'go-mode-hook 'my-go-mode-hook)
+(add-hook 'go-mode-hook 'my-go-mode-hook)
 
 (setenv "GO111MODULE" "on")
 
@@ -343,11 +405,12 @@
       '("pdflatex -shell-escape -interaction nonstopmode -output-directory %o %f"
         "pdflatex -shell-escape -interaction nonstopmode -output-directory %o %f"))
 
-;; (use-package flycheck-eglot
-;;   :ensure t
-;;   :after (flycheck eglot)
-;;   :config
-;;   (global-flycheck-eglot-mode 1))
+(use-package mwheel
+  :ensure nil
+  :custom
+  (mouse-wheel-tilt-scroll t)
+  (mouse-wheel-scroll-amount-horizontal 2)
+  (mouse-wheel-flip-direction t))
 
 (use-package docker-compose-mode
   :ensure t
@@ -396,14 +459,21 @@
   :bind (("C-x g" . magit-status)
          ("C-x G" . magit-status-with-prefix)))
 
-(if (> (nth 2 (decode-time (current-time))) 16)
-    (load-theme 'gruvbox-dark-hard t)
-  (load-theme 'gruvbox-dark-hard t))
-
 (use-package doom-modeline
   :ensure t
-  :init (doom-modeline-mode t))
+  :init (doom-modeline-mode t)
+  :config
+  (setq doom-modeline-project-detection 'project)
 
+  ;; (doom-modeline-def-modeline 'my-simple-line
+  ;;   '(bar matches buffer-info remote-host buffer-position parrot selection-info)
+  ;;   '(misc-info minor-modes input-method buffer-encoding major-mode vcs process checker))
+
+  ;; ;; Set default mode-line
+  ;; (add-hook 'doom-modeline-mode-hook
+  ;;           (lambda ()
+  ;;             (doom-modeline-set-modeline 'my-simple-line 'default)))
+  )
 
 (use-package go-mode
   :ensure t
@@ -544,6 +614,10 @@
   :ensure t
   :bind ("C-c s" . swiper))
 
+(use-package flycheck-golangci-lint
+  :ensure t
+  :hook (go-mode . flycheck-golangci-lint-setup))
+
 (dirvish-override-dired-mode)
 
 ;; (doom-modeline-def-modeline 'my-simple-line
@@ -595,22 +669,6 @@
                                                                            
 (setq completion-auto-help 'always)                                        
 
-;; (require 'flymake-golanci)
-;; (add-hook 'go-mode-hook 'flymake-golangci-load)
-;; (add-hook 'go-ts-mode-hook 'flymake-golangci-load)
-
-(use-package flycheck
-  :ensure t
-  :init
-  (global-flycheck-mode t))
-
-(use-package flycheck-golangci-lint
-  :ensure t
-  :hook ((go-mode . flycheck-golangci-lint-setup)
-         (go-ts-mode . flycheck-golangci-lint-setup))
-  )
-(setenv "GO111MODULE" "on")
-
 ;; New Pyconf Stuff
 (setq pyconf-bootstrap-packages '("black" "'python-lsp-server[all]'" "pyright" "epc" "orjson" "sexpdata==0.0.3" "six" "mypy"))
 
@@ -627,7 +685,8 @@
                (tsx . ("https://github.com/tree-sitter/tree-sitter-typescript" "master" "tsx/src"))
                (go . ("https://github.com/tree-sitter/tree-sitter-go"))
                (go-mod . ("https://github.com/camdencheek/tree-sitter-go-mod"))
-               (yaml "https://github.com/ikatyang/tree-sitter-yaml")))
+               (yaml "https://github.com/ikatyang/tree-sitter-yaml")
+               (ocaml . ("https://github.com/tree-sitter/tree-sitter-ocaml" "master" "ocaml/src"))))
       (add-to-list 'treesit-language-source-alist grammar)
       ;; Only install `grammar' if we don't already have it
       ;; installed. However, if you want to *update* a grammar then
@@ -661,7 +720,7 @@
     ;; You can manually enable Combobulate with `M-x
     ;; combobulate-mode'.
     :hook ((python-ts-mode . combobulate-mode)
-           ;(go-ts-mode . combobulate-mode)
+           (go-ts-mode . combobulate-mode)
            (js-ts-mode . combobulate-mode)
            (css-ts-mode . combobulate-mode)
            (yaml-ts-mode . combobulate-mode)
@@ -680,11 +739,10 @@
 (cl-defmethod project-root ((project (head go-module)))
   (cdr project))
 
-
 (add-to-list 'load-path "~/.emacs.d/lsp-bridge")
 
 (dolist (mapping '((python-mode . python-ts-mode)
-                   ;(go-mode . go-ts-mode)
+                   (go-mode . go-ts-mode)
                      (css-mode . css-ts-mode)
                      (typescript-mode . tsx-ts-mode)
                      (js-mode . js-ts-mode)
@@ -707,7 +765,11 @@
 (require 'python-isort)
 (require 'init-flagged)
 (load-file "~/.emacs.d/eshell-p10k.el")
-
+(require 'catppuccin-theme)
+(night-day-theme)
+(setq sml/no-confirm-load-theme t)
+(setq sml/theme 'atom-one-dark)
+(sml/setup)
 (setq eshell-prompt-function #'eshell-p10k-prompt-function
         eshell-prompt-regexp eshell-p10k-prompt-string)
 
@@ -715,7 +777,6 @@
 
 (move-text-default-bindings)
 (org-display-inline-images t t)
-
 
 (setq treesit-language-source-alist
   '((bash "https://github.com/tree-sitter/tree-sitter-bash")
@@ -741,4 +802,106 @@
     (tsx . ("https://github.com/tree-sitter/tree-sitter-typescript" "master" "tsx/src"))
     (typescript . ("https://github.com/tree-sitter/tree-sitter-typescript" "master" "typescript/src"))
     (yaml "https://github.com/ikatyang/tree-sitter-yaml")))
+
+(use-package vertico-posframe
+  :config
+  (setq vertico-posframe-parameters
+      '((left-fringe . 8)
+        (right-fringe . 8)))
+  (setq vertico-posframe-border-width 3)
+
+  :init
+  (vertico-posframe-mode)
+
+  ;; This is from https://gist.github.com/lazy/3f3a1eff443adf5c1a4630055b5a5f6e
+  (defface vertico-posframe-dim-face
+    '((t (:foreground "gray40")))
+    "Face for whole window background when posframe is active.")
+  (setq vertico-posframe-aside-rules
+        '("find-file" "consult-line" "consult-imenu" "consult-eglot-symbols" "project-find-regexp" "consult-yank" "xref"))
+  (defun vertico-posframe--rules-match-p (rules)
+    "Tests whether current command or buffer matches one of the RULES."
+    (cl-some
+     (lambda (rule)
+       (cond ((functionp rule)
+              (funcall rule))
+             ((and rule
+                   (stringp rule)
+                   (symbolp this-command))
+              (string-match-p rule (symbol-name this-command)))
+             ((symbolp rule)
+              (symbol-value rule))
+             (t nil)))
+     rules))
+  (setq vertico-posframe--overlays-back nil)
+  (defun vertico-posframe--add-overlays ()
+    "Create a dim background overlay for each window on WND-LIST."
+    (let* ((wnd (minibuffer-selected-window))
+           (windows (window-list (window-frame wnd) 0))
+           (windows-to-dim
+            (if (vertico-posframe--rules-match-p vertico-posframe-aside-rules)
+                (--select (not (eq it wnd)) windows)
+              windows)))
+      (setq vertico-posframe--overlays-back
+            (append
+             vertico-posframe--overlays-back
+             (mapcar (lambda (w)
+                       (let ((ol (make-overlay
+                                  (window-start w)
+                                  (window-end w)
+                                  (window-buffer w))))
+                         (overlay-put ol 'face 'aw-background-face)
+                         ol))
+                     windows-to-dim)))))
+
+  (defun vertico-posframe--remove-overlays ()
+    (mapc #'delete-overlay vertico-posframe--overlays-back)
+    (setq vertico-posframe--overlays-back nil))
+
+  (advice-add 'vertico-posframe--setup :after #'vertico-posframe--add-overlays)
+  (advice-add 'vertico-posframe--minibuffer-exit-hook :after #'vertico-posframe--remove-overlays)
+
+  (defun lazy/posframe-poshandler-besides-selected-window (info)
+    (let* ((window-left (plist-get info :parent-window-left))
+           (window-width (plist-get info :parent-window-width))
+           (window-right (+ window-left window-width))
+           (frame-width (plist-get info :parent-frame-width))
+           (frame-height (plist-get info :parent-frame-height))
+           (posframe-width (plist-get info :posframe-width))
+           (posframe-height (plist-get info :posframe-height))
+           (space-left window-left)
+           (space-right (- frame-width window-right))
+           (space-inside (- window-width posframe-width))
+           (wanted-top (/ (- frame-height posframe-height) 2)))
+      (cond
+       ((>= space-right posframe-width)
+        (cons window-right wanted-top))
+       ((>= space-left posframe-width)
+        (cons (- window-left posframe-width) wanted-top))
+       ((>= space-inside posframe-width)
+        (cons (- window-right posframe-width) wanted-top))
+       (t
+        (posframe-poshandler-frame-center info)))))
+  (setq vertico-posframe-poshandler #'lazy/posframe-poshandler-besides-selected-window)
+  (defun lazy/vertico-posframe-get-size (minibuffer-name)
+    "The default functon used by `vertico-posframe-size-function'."
+    (let ((width (- (round (* (frame-width) 0.5)) 2))
+          (height (or vertico-posframe-min-height
+                      (let ((height1 (+ vertico-count 1)))
+                        (min height1 (or vertico-posframe-height height1))))))
+      (list
+       :height height
+       :width width
+       :min-height height
+       :min-width width
+       :max-height height
+       :max-width width)))
+  (setq vertico-posframe-size-function #'lazy/vertico-posframe-get-size))
+
+;; (setq desktop-path '("~/"))
+;; (desktop-save-mode 1)
+;; (setq savehist-additional-variables
+;;       '(shell-command-history
+;;         register-alist))
+;; (savehist-mode 1)
 
