@@ -898,6 +898,27 @@
        :max-width width)))
   (setq vertico-posframe-size-function #'lazy/vertico-posframe-get-size))
 
+(use-package activities
+  :init
+  (activities-mode)
+  (activities-tabs-mode)
+  ;; Prevent `edebug' default bindings from interfering.
+  (setq edebug-inhibit-emacs-lisp-mode-bindings t)
+
+  :bind
+  (("C-x C-a C-n" . activities-new)
+   ;; As resuming is expected to be one of the most commonly used
+   ;; commands, this binding is one of the easiest to press.
+   ("C-x C-a C-a" . activities-resume)
+   ("C-x C-a C-s" . activities-suspend)
+   ("C-x C-a C-k" . activities-kill)
+   ;; This binding mirrors, e.g. "C-x t RET".
+   ("C-x C-a RET" . activities-switch)
+   ("C-x C-a g" . activities-revert)
+   ("C-x C-a l" . activities-list)
+   ("C-x C-a d" . activities-discard)
+   ("C-x C-a C-d" . activities-discard)))
+
 ;; (setq desktop-path '("~/"))
 ;; (desktop-save-mode 1)
 ;; (setq savehist-additional-variables
