@@ -672,21 +672,23 @@
 ;; New Pyconf Stuff
 (setq pyconf-bootstrap-packages '("black" "'python-lsp-server[all]'" "pyright" "epc" "orjson" "sexpdata==0.0.3" "six" "mypy"))
 
-;; `M-x combobulate' (or `C-c o o') to start using Combobulate
+;; `M-x combobulate' (default: `C-c o o') to start using Combobulate
 (use-package treesit
+  :mode (("\\.tsx\\'" . tsx-ts-mode))
   :preface
   (defun mp-setup-install-grammars ()
     "Install Tree-sitter grammars if they are absent."
     (interactive)
     (dolist (grammar
-             '((css "https://github.com/tree-sitter/tree-sitter-css")
-               (javascript . ("https://github.com/tree-sitter/tree-sitter-javascript" "master" "src"))
-               (python "https://github.com/tree-sitter/tree-sitter-python")
-               (tsx . ("https://github.com/tree-sitter/tree-sitter-typescript" "master" "tsx/src"))
-               (go . ("https://github.com/tree-sitter/tree-sitter-go"))
-               (go-mod . ("https://github.com/camdencheek/tree-sitter-go-mod"))
-               (yaml "https://github.com/ikatyang/tree-sitter-yaml")
-               (ocaml . ("https://github.com/tree-sitter/tree-sitter-ocaml" "master" "ocaml/src"))))
+              '((css . ("https://github.com/tree-sitter/tree-sitter-css" "v0.20.0"))
+                (html . ("https://github.com/tree-sitter/tree-sitter-html" "v0.20.1"))
+                (javascript . ("https://github.com/tree-sitter/tree-sitter-javascript" "v0.20.1" "src"))
+                (json . ("https://github.com/tree-sitter/tree-sitter-json" "v0.20.2"))
+                (python . ("https://github.com/tree-sitter/tree-sitter-python" "v0.21.0"))
+                (toml "https://github.com/tree-sitter/tree-sitter-toml")
+                (tsx . ("https://github.com/tree-sitter/tree-sitter-typescript" "v0.20.3" "tsx/src"))
+                (typescript . ("https://github.com/tree-sitter/tree-sitter-typescript" "v0.20.3" "typescript/src"))
+                (yaml . ("https://github.com/ikatyang/tree-sitter-yaml" "v0.5.0"))))
       (add-to-list 'treesit-language-source-alist grammar)
       ;; Only install `grammar' if we don't already have it
       ;; installed. However, if you want to *update* a grammar then
@@ -700,35 +702,46 @@
   ;; You can remap major modes with `major-mode-remap-alist'. Note
   ;; that this does *not* extend to hooks! Make sure you migrate them
   ;; also
-  ;; (dolist (mapping '((python-mode . python-ts-mode)
-  ;;                    (css-mode . css-ts-mode)
-  ;;                    (typescript-mode . tsx-ts-mode)
-  ;;                    (js-mode . js-ts-mode)
-  ;;                    (css-mode . css-ts-mode)
-  ;;                    (yaml-mode . yaml-ts-mode)))
-  ;;   (add-to-list 'major-mode-remap-alist mapping))
-
+  (dolist (mapping
+         '((python-mode . python-ts-mode)
+           (css-mode . css-ts-mode)
+           (typescript-mode . typescript-ts-mode)
+           (js2-mode . js-ts-mode)
+           (bash-mode . bash-ts-mode)
+           (css-mode . css-ts-mode)
+           (json-mode . json-ts-mode)
+           (js-json-mode . json-ts-mode)))
+    (add-to-list 'major-mode-remap-alist mapping))
   :config
   (mp-setup-install-grammars)
   ;; Do not forget to customize Combobulate to your liking:
-  ;;
-  ;;  M-x customize-group RET combobulate RET
-  ;;
+  
+  ;; M-x customize-group RET combobulate RET
+  
   (use-package combobulate
+    :vc (:url "https://github.com/mickeynp/combobulate" :branch master)                                
+    :preface
+    ;; You can customize Combobulate's key prefix here.
+    ;; Note that you may have to restart Emacs for this to take effect!
+    (setq combobulate-key-prefix "C-c o")
+
     ;; Optional, but recommended.
     ;;
     ;; You can manually enable Combobulate with `M-x
     ;; combobulate-mode'.
-    :hook ((python-ts-mode . combobulate-mode)
-           (go-ts-mode . combobulate-mode)
-           (js-ts-mode . combobulate-mode)
-           (css-ts-mode . combobulate-mode)
-           (yaml-ts-mode . combobulate-mode)
-           (typescript-ts-mode . combobulate-mode)
-           (tsx-ts-mode . combobulate-mode))
+    :hook
+      ((python-ts-mode . combobulate-mode)
+       (js-ts-mode . combobulate-mode)
+       (html-ts-mode . combobulate-mode)
+       (css-ts-mode . combobulate-mode)
+       (yaml-ts-mode . combobulate-mode)
+       (typescript-ts-mode . combobulate-mode)
+       (json-ts-mode . combobulate-mode)
+       (tsx-ts-mode . combobulate-mode))
     ;; Amend this to the directory where you keep Combobulate's source
     ;; code.
-    :load-path ("~/.emacs.d/combobulate")))
+                                        ;;:load-path ("path-to-git-checkout-of-combobulate")
+      ))
 
 (defun project-find-go-module (dir)
   (when-let ((root (locate-dominating-file dir "go.mod")))
@@ -926,3 +939,34 @@
 ;;         register-alist))
 ;; (savehist-mode 1)
 
+(use-package dape
+  :preface
+  ;; By default dape shares the same keybinding prefix as `gud'
+  ;; If you do not want to use any prefix, set it to nil.
+  (setq dape-key-prefix "\C-x\C-d")
+
+  :hook
+  ;; Save breakpoints on quit
+  ((kill-emacs . dape-breakpoint-save)
+  ;; Load breakpoints on startup
+  (after-init . dape-breakpoint-load))
+
+  :init
+  ;; To use window configuration like gud (gdb-mi)
+  (setq dape-buffer-window-arrangement 'right)
+
+  :config
+  ;; Info buffers to the right
+  (setq dape-buffer-window-arrangement 'right)
+
+  ;; Global bindings for setting breakpoints with mouse
+  (dape-breakpoint-global-mode)
+
+  ;; To display info and/or repl buffers on stopped
+  (add-hook 'dape-on-stopped-hooks 'dape-info)
+  (add-hook 'dape-on-stopped-hooks 'dape-repl)
+  ;; Kill compile buffer on build success
+  (add-hook 'dape-compile-compile-hooks 'kill-buffer)
+
+  ;; Save buffers on startup, useful for interpreted languages
+  (add-hook 'dape-on-start-hooks (lambda () (save-some-buffers t t))))
