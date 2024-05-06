@@ -132,14 +132,14 @@
            (space-inside (- window-width posframe-width))
            (wanted-top (/ (- frame-height posframe-height) 2)))
       (cond
-       ((>= space-right posframe-width)
-        (cons window-right wanted-top))
-       ((>= space-left posframe-width)
-        (cons (- window-left posframe-width) wanted-top))
+       ;; ((>= space-right posframe-width)
+       ;;  (cons window-right wanted-top))
+       ;; ((>= space-left posframe-width)
+       ;;  (cons (- window-left posframe-width) wanted-top))
        ;; ((>= space-inside posframe-width)
        ;;  (cons (- window-right posframe-width) wanted-top))
        (t
-        (posframe-poshandler-frame-center info)))))
+        (posframe-poshandler-frame-top-center info)))))
   (setq vertico-posframe-poshandler #'lazy/posframe-poshandler-besides-selected-window)
   (defun lazy/vertico-posframe-get-size (minibuffer-name)
     "The default functon used by `vertico-posframe-size-function'."
