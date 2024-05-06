@@ -649,7 +649,8 @@
 (setq-default indent-tabs-mode nil)
 
 (use-package pyconf
-  :ensure t)
+  :ensure t
+  :vc (:url "https://github.com/andcarnivorous/pyconf" :branch "master"))
 
 (use-package eglot                                                         
   :ensure t                                                                
